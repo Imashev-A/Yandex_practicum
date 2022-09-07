@@ -38,4 +38,3 @@
 
 - matplotlib
 - pandas
-- pymystem3
