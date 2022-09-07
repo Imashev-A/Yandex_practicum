@@ -38,3 +38,6 @@
 
 ## Инструменты:
 
+- matplotlib
+- numpy
+- pandas
