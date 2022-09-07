@@ -33,6 +33,5 @@
 
 ## Инструменты:
 
-- matplotlib
-- numpy
 - pandas
+- pymystem3
