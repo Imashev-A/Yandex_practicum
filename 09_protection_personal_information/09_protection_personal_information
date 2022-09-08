@@ -1,0 +1,1730 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "cd3a8480",
+   "metadata": {
+    "toc": true
+   },
+   "source": [
+    "<h1>Содержание<span class=\"tocSkip\"></span></h1>\n",
+    "<div class=\"toc\"><ul class=\"toc-item\"><li><span><a href=\"#Загрузка-данных\" data-toc-modified-id=\"Загрузка-данных-1\"><span class=\"toc-item-num\">1&nbsp;&nbsp;</span>Загрузка данных</a></span><ul class=\"toc-item\"><li><span><a href=\"#Переименование-столбцов\" data-toc-modified-id=\"Переименование-столбцов-1.1\"><span class=\"toc-item-num\">1.1&nbsp;&nbsp;</span>Переименование столбцов</a></span></li><li><span><a href=\"#Замена-типа-данных\" data-toc-modified-id=\"Замена-типа-данных-1.2\"><span class=\"toc-item-num\">1.2&nbsp;&nbsp;</span>Замена типа данных</a></span></li><li><span><a href=\"#Вывод\" data-toc-modified-id=\"Вывод-1.3\"><span class=\"toc-item-num\">1.3&nbsp;&nbsp;</span>Вывод</a></span></li></ul></li><li><span><a href=\"#Умножение-матриц\" data-toc-modified-id=\"Умножение-матриц-2\"><span class=\"toc-item-num\">2&nbsp;&nbsp;</span>Умножение матриц</a></span><ul class=\"toc-item\"><li><span><a href=\"#Разобьем-признаки-для-обучения\" data-toc-modified-id=\"Разобьем-признаки-для-обучения-2.1\"><span class=\"toc-item-num\">2.1&nbsp;&nbsp;</span>Разобьем признаки для обучения</a></span></li><li><span><a href=\"#Обучение-модели\" data-toc-modified-id=\"Обучение-модели-2.2\"><span class=\"toc-item-num\">2.2&nbsp;&nbsp;</span>Обучение модели</a></span></li><li><span><a href=\"#Вывод\" data-toc-modified-id=\"Вывод-2.3\"><span class=\"toc-item-num\">2.3&nbsp;&nbsp;</span>Вывод</a></span></li></ul></li><li><span><a href=\"#Дешифрование-данных\" data-toc-modified-id=\"Дешифрование-данных-3\"><span class=\"toc-item-num\">3&nbsp;&nbsp;</span>Дешифрование данных</a></span></li><li><span><a href=\"#Вывод\" data-toc-modified-id=\"Вывод-4\"><span class=\"toc-item-num\">4&nbsp;&nbsp;</span>Вывод</a></span></li></ul></div>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "79623b0c",
+   "metadata": {},
+   "source": [
+    "# Защита персональных данных клиентов\n",
+    "\n",
+    "Вам нужно защитить данные клиентов страховой компании «Хоть потоп». Разработайте такой метод преобразования данных, чтобы по ним было сложно восстановить персональную информацию. Обоснуйте корректность его работы.\n",
+    "\n",
+    "Нужно защитить данные, чтобы при преобразовании качество моделей машинного обучения не ухудшилось. Подбирать наилучшую модель не требуется.\n",
+    "\n",
+    "# Описание данных\n",
+    "\n",
+    "**Признаки:** \n",
+    "* пол \n",
+    "* возраст \n",
+    "* зарплата застрахованного\n",
+    "* количество членов его семьи.\n",
+    "\n",
+    "**Целевой признак:**\n",
+    "* количество страховых выплат клиенту за последние 5 лет."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0d2249ed",
+   "metadata": {},
+   "source": [
+    "## Загрузка данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "87d836f2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "\n",
+    "from sklearn.metrics import r2_score"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6c70efac",
+   "metadata": {},
+   "source": [
+    "Загрузим данные"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "7c278102",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.read_csv('./datasets/insurance.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "6995672c",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 5000 entries, 0 to 4999\n",
+      "Data columns (total 5 columns):\n",
+      " #   Column             Non-Null Count  Dtype  \n",
+      "---  ------             --------------  -----  \n",
+      " 0   Пол                5000 non-null   int64  \n",
+      " 1   Возраст            5000 non-null   float64\n",
+      " 2   Зарплата           5000 non-null   float64\n",
+      " 3   Члены семьи        5000 non-null   int64  \n",
+      " 4   Страховые выплаты  5000 non-null   int64  \n",
+      "dtypes: float64(2), int64(3)\n",
+      "memory usage: 195.4 KB\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Пол</th>\n",
+       "      <th>Возраст</th>\n",
+       "      <th>Зарплата</th>\n",
+       "      <th>Члены семьи</th>\n",
+       "      <th>Страховые выплаты</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>41.0</td>\n",
+       "      <td>49600.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0</td>\n",
+       "      <td>46.0</td>\n",
+       "      <td>38000.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0</td>\n",
+       "      <td>29.0</td>\n",
+       "      <td>21000.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0</td>\n",
+       "      <td>21.0</td>\n",
+       "      <td>41700.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1</td>\n",
+       "      <td>28.0</td>\n",
+       "      <td>26100.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>1</td>\n",
+       "      <td>43.0</td>\n",
+       "      <td>41000.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>6</th>\n",
+       "      <td>1</td>\n",
+       "      <td>39.0</td>\n",
+       "      <td>39700.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7</th>\n",
+       "      <td>1</td>\n",
+       "      <td>25.0</td>\n",
+       "      <td>38600.0</td>\n",
+       "      <td>4</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>8</th>\n",
+       "      <td>1</td>\n",
+       "      <td>36.0</td>\n",
+       "      <td>49700.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>9</th>\n",
+       "      <td>1</td>\n",
+       "      <td>32.0</td>\n",
+       "      <td>51700.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   Пол  Возраст  Зарплата  Члены семьи  Страховые выплаты\n",
+       "0    1     41.0   49600.0            1                  0\n",
+       "1    0     46.0   38000.0            1                  1\n",
+       "2    0     29.0   21000.0            0                  0\n",
+       "3    0     21.0   41700.0            2                  0\n",
+       "4    1     28.0   26100.0            0                  0\n",
+       "5    1     43.0   41000.0            2                  1\n",
+       "6    1     39.0   39700.0            2                  0\n",
+       "7    1     25.0   38600.0            4                  0\n",
+       "8    1     36.0   49700.0            1                  0\n",
+       "9    1     32.0   51700.0            1                  0"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.info()\n",
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "13d11231",
+   "metadata": {},
+   "source": [
+    "### Переименование столбцов"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "36bebe80",
+   "metadata": {},
+   "source": [
+    "Переименуем столбцы"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "0ff293f9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.columns = ['gender', 'age', 'income', 'family', 'payments']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b8619e72",
+   "metadata": {},
+   "source": [
+    "### Замена типа данных"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1625cd34",
+   "metadata": {},
+   "source": [
+    "Изменим типы данных у столбцов на \"int\"."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "2bbf3a74",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = df.astype('int')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "de34d668",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 5000 entries, 0 to 4999\n",
+      "Data columns (total 5 columns):\n",
+      " #   Column    Non-Null Count  Dtype\n",
+      "---  ------    --------------  -----\n",
+      " 0   gender    5000 non-null   int64\n",
+      " 1   age       5000 non-null   int64\n",
+      " 2   income    5000 non-null   int64\n",
+      " 3   family    5000 non-null   int64\n",
+      " 4   payments  5000 non-null   int64\n",
+      "dtypes: int64(5)\n",
+      "memory usage: 195.4 KB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0ed6c17f",
+   "metadata": {},
+   "source": [
+    "### Вывод"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0038b5c9",
+   "metadata": {},
+   "source": [
+    "Привели названия столбцов к единому стилю. Заменили типы данных. В данных нет пропущенных значений. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2dab80c0",
+   "metadata": {},
+   "source": [
+    "## Умножение матриц"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1d2c118a",
+   "metadata": {},
+   "source": [
+    "Обозначения:\n",
+    "\n",
+    "- $X$ — матрица признаков (нулевой столбец состоит из единиц)\n",
+    "\n",
+    "- $y$ — вектор целевого признака\n",
+    "\n",
+    "- $P$ — матрица, на которую умножаются признаки (случайная матрица)\n",
+    "\n",
+    "- $w$ — вектор весов линейной регрессии (нулевой элемент равен сдвигу)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b586d0b0",
+   "metadata": {},
+   "source": [
+    "Предсказания:\n",
+    "\n",
+    "$$\n",
+    "a = Xw\n",
+    "$$\n",
+    "\n",
+    "Задача обучения:\n",
+    "\n",
+    "$$\n",
+    "w = \\arg\\min_w MSE(Xw, y)\n",
+    "$$\n",
+    "\n",
+    "Формула обучения:\n",
+    "\n",
+    "$$\n",
+    "w = (X^T X)^{-1} X^T y\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2944383d",
+   "metadata": {},
+   "source": [
+    "**Обоснование:**\n",
+    "\n",
+    "Предсказания:\n",
+    "\n",
+    "$$\n",
+    "a = a'\n",
+    "$$\n",
+    "\n",
+    "Используемые свойства:\n",
+    "$$\n",
+    "(AB)^T=B^T A^T\n",
+    "$$\n",
+    "$$\n",
+    "(AB)^{-1} = B^{-1} A^{-1}\n",
+    "$$\n",
+    "$$\n",
+    "A A^{-1} = A^{-1} A = E\n",
+    "$$\n",
+    "$$\n",
+    "AE = EA = A\n",
+    "$$\n",
+    "Доказательство:\n",
+    "$$\n",
+    "a = Xw = XEw = XPP^{-1}w=(XP)P^{-1}w = (XP)w'\n",
+    "$$\n",
+    "\\\n",
+    "$$\n",
+    "w = (X^TX)^{-1}(X)^Ty\n",
+    "$$\n",
+    "\\\n",
+    "$$\n",
+    "w' = ((XP)^TXP)^{-1}(XP)^Ty\n",
+    "$$\n",
+    "\\\n",
+    "$$\n",
+    "a' = XPw' \n",
+    "$$\n",
+    "$$\n",
+    "a' = XP((XP)^TXP)^{-1}(XP)^Ty\n",
+    "$$\n",
+    "$$\n",
+    "a' = XP(P^TX^TXP)^{-1}P^TX^Ty\n",
+    "$$\n",
+    "$$\n",
+    "a' = XPP^{-1}(X^TX)^{-1}(XP)^{-1}P^TX^Ty \n",
+    "$$\n",
+    "$$\n",
+    "a'= X(X^TX)^{-1}X^Ty \n",
+    "$$\n",
+    "\\\n",
+    "$$\n",
+    "w = (X^TX)^{-1}X^Ty \n",
+    "$$\n",
+    "\\\n",
+    "$$\n",
+    "a' = Xw = a\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c0d97de2",
+   "metadata": {},
+   "source": [
+    "### Разобьем признаки для обучения"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "c71a327d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "features = df.drop('payments', axis=1)\n",
+    "target = df['payments']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "13f4301d",
+   "metadata": {},
+   "source": [
+    "Создадим случайную матрицу для преобразования данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "c02fd7c5",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[2, 5, 8, 4],\n",
+       "       [0, 5, 1, 3],\n",
+       "       [4, 2, 5, 6],\n",
+       "       [8, 2, 3, 2]])"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "P = np.random.randint(10, size=(features.shape[1], features.shape[1]))\n",
+    "\n",
+    "while True:\n",
+    "    try:\n",
+    "        np.linalg.inv(P)\n",
+    "        break\n",
+    "    except:\n",
+    "        P = np.random.randint(10, size=(features.shape[1], features.shape[1]))\n",
+    "P"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "90fb8a93",
+   "metadata": {},
+   "source": [
+    "**Алгоритм преобразования**\n",
+    "\n",
+    "$$\n",
+    "X = features  P\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0c9fa6f0",
+   "metadata": {},
+   "source": [
+    "Умножение матриц"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "c1f3a4ed",
+   "metadata": {
+    "scrolled": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>0</th>\n",
+       "      <th>1</th>\n",
+       "      <th>2</th>\n",
+       "      <th>3</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>198410</td>\n",
+       "      <td>99412</td>\n",
+       "      <td>248052</td>\n",
+       "      <td>297729</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>152008</td>\n",
+       "      <td>76232</td>\n",
+       "      <td>190049</td>\n",
+       "      <td>228140</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>84000</td>\n",
+       "      <td>42145</td>\n",
+       "      <td>105029</td>\n",
+       "      <td>126087</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>166816</td>\n",
+       "      <td>83509</td>\n",
+       "      <td>208527</td>\n",
+       "      <td>250267</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>104402</td>\n",
+       "      <td>52345</td>\n",
+       "      <td>130536</td>\n",
+       "      <td>156688</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4995</th>\n",
+       "      <td>142816</td>\n",
+       "      <td>71544</td>\n",
+       "      <td>178534</td>\n",
+       "      <td>214288</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4996</th>\n",
+       "      <td>209608</td>\n",
+       "      <td>104972</td>\n",
+       "      <td>262037</td>\n",
+       "      <td>314504</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4997</th>\n",
+       "      <td>135616</td>\n",
+       "      <td>67904</td>\n",
+       "      <td>169526</td>\n",
+       "      <td>203464</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4998</th>\n",
+       "      <td>130826</td>\n",
+       "      <td>65521</td>\n",
+       "      <td>163539</td>\n",
+       "      <td>196276</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4999</th>\n",
+       "      <td>162410</td>\n",
+       "      <td>81347</td>\n",
+       "      <td>203039</td>\n",
+       "      <td>243690</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5000 rows × 4 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           0       1       2       3\n",
+       "0     198410   99412  248052  297729\n",
+       "1     152008   76232  190049  228140\n",
+       "2      84000   42145  105029  126087\n",
+       "3     166816   83509  208527  250267\n",
+       "4     104402   52345  130536  156688\n",
+       "...      ...     ...     ...     ...\n",
+       "4995  142816   71544  178534  214288\n",
+       "4996  209608  104972  262037  314504\n",
+       "4997  135616   67904  169526  203464\n",
+       "4998  130826   65521  163539  196276\n",
+       "4999  162410   81347  203039  243690\n",
+       "\n",
+       "[5000 rows x 4 columns]"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X = features.dot(P)\n",
+    "X"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3b5f10b0",
+   "metadata": {},
+   "source": [
+    "### Обучение модели"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "730c1ac2",
+   "metadata": {},
+   "source": [
+    "Создадим класс **LinearRegression()** для обучения модели"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "19f07b83",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class LinearRegression:\n",
+    "    def fit(self, train_features, train_target):\n",
+    "        X = np.concatenate((np.ones((train_features.shape[0], 1)), train_features), axis=1)\n",
+    "        y = train_target\n",
+    "        w = np.linalg.inv(X.T @ X) @ X.T @ y\n",
+    "        self.w = w[1:]\n",
+    "        self.w0 = w[0]\n",
+    "\n",
+    "    def predict(self, test_features):\n",
+    "        return test_features.dot(self.w) + self.w0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "857ceec4",
+   "metadata": {},
+   "source": [
+    "Обучим модель на преобразованных данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "86ba0efb",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "R2 для преобразованных данных 0.42494550308168155\n"
+     ]
+    }
+   ],
+   "source": [
+    "model = LinearRegression()\n",
+    "model.fit(X, target)\n",
+    "predictions = model.predict(X)\n",
+    "print('R2 для преобразованных данных', r2_score(target, predictions))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5bcd713a",
+   "metadata": {},
+   "source": [
+    "Обучим модель на исходных данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "41973859",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "R2 для преобразованных данных 0.42494550308169177\n"
+     ]
+    }
+   ],
+   "source": [
+    "model = LinearRegression()\n",
+    "model.fit(features, target)\n",
+    "predictions = model.predict(features)\n",
+    "print('R2 для преобразованных данных', r2_score(target, predictions))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e606b7cf",
+   "metadata": {},
+   "source": [
+    "### Вывод"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "49d29cbe",
+   "metadata": {},
+   "source": [
+    "Метрики моделей одинаковы и составляют для исходных и преобразованных данных, 0.42494550308169177 и 0.42494550308168155, соответственно. Из этого следует, что метрики при обучении матрицы и преобразованной матрицы, при умножении на случайную матрицу, одинаковы. Это можно обосновать тем, что при умножении матриц, зависимости между данными сохраняются."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c78bdae0",
+   "metadata": {},
+   "source": [
+    "##  Дешифрование данных "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "28b275c0",
+   "metadata": {},
+   "source": [
+    "**Алгоритм**\n",
+    "\n",
+    "$$\n",
+    "transform = X P^{-1}\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "3561c2f0",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>0</th>\n",
+       "      <th>1</th>\n",
+       "      <th>2</th>\n",
+       "      <th>3</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>41</td>\n",
+       "      <td>49600</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0</td>\n",
+       "      <td>46</td>\n",
+       "      <td>38000</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0</td>\n",
+       "      <td>29</td>\n",
+       "      <td>21000</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0</td>\n",
+       "      <td>21</td>\n",
+       "      <td>41700</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1</td>\n",
+       "      <td>28</td>\n",
+       "      <td>26100</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4995</th>\n",
+       "      <td>0</td>\n",
+       "      <td>28</td>\n",
+       "      <td>35700</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4996</th>\n",
+       "      <td>0</td>\n",
+       "      <td>34</td>\n",
+       "      <td>52400</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4997</th>\n",
+       "      <td>0</td>\n",
+       "      <td>20</td>\n",
+       "      <td>33900</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4998</th>\n",
+       "      <td>1</td>\n",
+       "      <td>22</td>\n",
+       "      <td>32700</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4999</th>\n",
+       "      <td>1</td>\n",
+       "      <td>28</td>\n",
+       "      <td>40600</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5000 rows × 4 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      0   1      2  3\n",
+       "0     1  41  49600  1\n",
+       "1     0  46  38000  1\n",
+       "2     0  29  21000  0\n",
+       "3     0  21  41700  2\n",
+       "4     1  28  26100  0\n",
+       "...  ..  ..    ... ..\n",
+       "4995  0  28  35700  2\n",
+       "4996  0  34  52400  1\n",
+       "4997  0  20  33900  2\n",
+       "4998  1  22  32700  3\n",
+       "4999  1  28  40600  1\n",
+       "\n",
+       "[5000 rows x 4 columns]"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "transform = X.dot(np.linalg.inv(P))\n",
+    "transform = round(transform).astype('int')\n",
+    "transform"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4be485c1",
+   "metadata": {},
+   "source": [
+    "Проверим исходные и расшифрованные данные"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "137b54aa",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>0</th>\n",
+       "      <th>1</th>\n",
+       "      <th>2</th>\n",
+       "      <th>3</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>41</td>\n",
+       "      <td>49600</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0</td>\n",
+       "      <td>46</td>\n",
+       "      <td>38000</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0</td>\n",
+       "      <td>29</td>\n",
+       "      <td>21000</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0</td>\n",
+       "      <td>21</td>\n",
+       "      <td>41700</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1</td>\n",
+       "      <td>28</td>\n",
+       "      <td>26100</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4995</th>\n",
+       "      <td>0</td>\n",
+       "      <td>28</td>\n",
+       "      <td>35700</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4996</th>\n",
+       "      <td>0</td>\n",
+       "      <td>34</td>\n",
+       "      <td>52400</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4997</th>\n",
+       "      <td>0</td>\n",
+       "      <td>20</td>\n",
+       "      <td>33900</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4998</th>\n",
+       "      <td>1</td>\n",
+       "      <td>22</td>\n",
+       "      <td>32700</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4999</th>\n",
+       "      <td>1</td>\n",
+       "      <td>28</td>\n",
+       "      <td>40600</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5000 rows × 4 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      0   1      2  3\n",
+       "0     1  41  49600  1\n",
+       "1     0  46  38000  1\n",
+       "2     0  29  21000  0\n",
+       "3     0  21  41700  2\n",
+       "4     1  28  26100  0\n",
+       "...  ..  ..    ... ..\n",
+       "4995  0  28  35700  2\n",
+       "4996  0  34  52400  1\n",
+       "4997  0  20  33900  2\n",
+       "4998  1  22  32700  3\n",
+       "4999  1  28  40600  1\n",
+       "\n",
+       "[5000 rows x 4 columns]"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "transform[~transform.isin(features)].dropna()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f526bff4",
+   "metadata": {},
+   "source": [
+    "Данные совпадают"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "735cbb10",
+   "metadata": {},
+   "source": [
+    "## Вывод"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2bf13a63",
+   "metadata": {},
+   "source": [
+    "Провели подготовку данных, приведя названия столбцов к единому стилю и заменив типы данных на целочисленный тип.\n",
+    "\n",
+    "Проверили, что метрика исходных и преобразованных данных одинакова, при перемножении матриц. Что позволяет шифровать информацию, от утечки информации о клиентах, при обучении моделей. Выяснили, что исходные данные можно вернуть с помощью умножения на обратную матрицу. Теории проверяли следующими алгоритмами $ A P = X $ и $ A = X P^{-1}$"
+   ]
+  }
+ ],
+ "metadata": {
+  "ExecuteTimeLog": [
+   {
+    "duration": 17,
+    "start_time": "2022-05-15T20:34:31.087Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:35:15.549Z"
+   },
+   {
+    "duration": 41,
+    "start_time": "2022-05-15T20:35:31.089Z"
+   },
+   {
+    "duration": 1085,
+    "start_time": "2022-05-15T20:35:45.529Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:35:54.875Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T20:36:11.312Z"
+   },
+   {
+    "duration": 61,
+    "start_time": "2022-05-15T20:36:27.363Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T20:36:51.875Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T20:36:59.635Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T20:37:05.495Z"
+   },
+   {
+    "duration": 127,
+    "start_time": "2022-05-15T20:38:45.832Z"
+   },
+   {
+    "duration": 112,
+    "start_time": "2022-05-15T20:40:52.275Z"
+   },
+   {
+    "duration": 111,
+    "start_time": "2022-05-15T20:41:05.125Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:41:35.783Z"
+   },
+   {
+    "duration": 117,
+    "start_time": "2022-05-15T20:41:41.922Z"
+   },
+   {
+    "duration": 114,
+    "start_time": "2022-05-15T20:41:51.819Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:42:03.594Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T20:42:09.568Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T20:42:15.128Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T20:42:21.899Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T20:42:26.428Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T20:42:32.139Z"
+   },
+   {
+    "duration": 120,
+    "start_time": "2022-05-15T20:42:36.799Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2022-05-15T20:42:40.675Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T20:43:03.000Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T20:50:50.395Z"
+   },
+   {
+    "duration": 9,
+    "start_time": "2022-05-15T20:51:03.089Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:51:35.482Z"
+   },
+   {
+    "duration": 90,
+    "start_time": "2022-05-15T20:51:42.338Z"
+   },
+   {
+    "duration": 105,
+    "start_time": "2022-05-15T20:51:47.495Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:51:51.115Z"
+   },
+   {
+    "duration": 100,
+    "start_time": "2022-05-15T20:52:01.053Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:52:01.309Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:52:19.709Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:52:20.400Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:52:36.897Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:52:37.737Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:52:41.232Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:52:41.464Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:56:50.240Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:56:54.737Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:56:56.212Z"
+   },
+   {
+    "duration": 108,
+    "start_time": "2022-05-15T20:56:58.732Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:57:10.681Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:57:53.544Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T20:57:59.770Z"
+   },
+   {
+    "duration": 9,
+    "start_time": "2022-05-15T20:58:30.488Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:58:40.368Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T20:58:51.633Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T20:58:52.256Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T20:58:59.111Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T20:59:48.620Z"
+   },
+   {
+    "duration": 110,
+    "start_time": "2022-05-15T21:00:10.186Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:00:16.407Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:00:21.610Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:02:34.558Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:02:40.061Z"
+   },
+   {
+    "duration": 113,
+    "start_time": "2022-05-15T21:04:08.989Z"
+   },
+   {
+    "duration": 138,
+    "start_time": "2022-05-15T21:09:58.723Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:10:17.984Z"
+   },
+   {
+    "duration": 147,
+    "start_time": "2022-05-15T21:10:34.701Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:10:41.566Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:11:00.020Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:11:01.509Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T21:11:15.621Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:11:18.031Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:11:19.883Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:11:22.053Z"
+   },
+   {
+    "duration": 129,
+    "start_time": "2022-05-15T21:11:49.106Z"
+   },
+   {
+    "duration": 87739,
+    "start_time": "2022-05-15T21:13:06.407Z"
+   },
+   {
+    "duration": 139758,
+    "start_time": "2022-05-15T21:14:54.766Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:17:28.515Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:17:40.363Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:17:46.748Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:17:53.835Z"
+   },
+   {
+    "duration": 109,
+    "start_time": "2022-05-15T21:18:13.822Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:18:20.054Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:18:23.354Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T21:18:30.783Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T21:18:47.159Z"
+   },
+   {
+    "duration": 1143,
+    "start_time": "2022-05-15T21:20:30.404Z"
+   },
+   {
+    "duration": 86,
+    "start_time": "2022-05-15T21:20:33.708Z"
+   },
+   {
+    "duration": 24,
+    "start_time": "2022-05-15T21:20:34.086Z"
+   },
+   {
+    "duration": 2,
+    "start_time": "2022-05-15T21:20:35.655Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:20:36.930Z"
+   },
+   {
+    "duration": 11,
+    "start_time": "2022-05-15T21:20:37.263Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:20:52.597Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:21:53.474Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-15T21:21:57.148Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T21:22:33.932Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T21:22:37.277Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T21:22:37.930Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-15T21:22:38.377Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T21:22:46.517Z"
+   },
+   {
+    "duration": 1081,
+    "start_time": "2022-05-15T21:22:54.813Z"
+   },
+   {
+    "duration": 54,
+    "start_time": "2022-05-15T21:22:55.896Z"
+   },
+   {
+    "duration": 23,
+    "start_time": "2022-05-15T21:22:55.952Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:22:55.977Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-15T21:22:56.358Z"
+   },
+   {
+    "duration": 9,
+    "start_time": "2022-05-15T21:22:56.539Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:22:59.344Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-15T21:23:00.315Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T21:23:05.371Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-15T21:23:06.792Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2022-05-15T21:23:08.447Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-15T21:23:10.726Z"
+   },
+   {
+    "duration": 16,
+    "start_time": "2022-05-15T21:24:11.835Z"
+   },
+   {
+    "duration": 13,
+    "start_time": "2022-05-15T21:24:14.442Z"
+   },
+   {
+    "duration": 58,
+    "start_time": "2022-05-18T08:33:06.370Z"
+   },
+   {
+    "duration": 930,
+    "start_time": "2022-05-18T08:33:14.051Z"
+   },
+   {
+    "duration": 96,
+    "start_time": "2022-05-18T08:33:14.983Z"
+   },
+   {
+    "duration": 26,
+    "start_time": "2022-05-18T08:33:15.081Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-18T08:33:15.109Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-18T08:33:15.631Z"
+   },
+   {
+    "duration": 10,
+    "start_time": "2022-05-18T08:33:15.774Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-18T08:33:19.133Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-18T08:33:20.091Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-18T08:33:22.962Z"
+   },
+   {
+    "duration": 2,
+    "start_time": "2022-05-18T08:33:23.300Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-18T08:33:57.269Z"
+   },
+   {
+    "duration": 69,
+    "start_time": "2022-05-18T08:34:16.978Z"
+   },
+   {
+    "duration": 97,
+    "start_time": "2022-05-18T08:34:25.769Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-18T08:34:32.013Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-18T08:34:32.542Z"
+   },
+   {
+    "duration": 4,
+    "start_time": "2022-05-18T08:35:12.677Z"
+   },
+   {
+    "duration": 6,
+    "start_time": "2022-05-18T08:35:24.838Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-18T08:35:41.209Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-18T08:35:54.720Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-18T08:36:12.622Z"
+   },
+   {
+    "duration": 897,
+    "start_time": "2022-05-18T10:34:01.505Z"
+   },
+   {
+    "duration": 137,
+    "start_time": "2022-05-18T10:34:02.404Z"
+   },
+   {
+    "duration": 24,
+    "start_time": "2022-05-18T10:34:02.543Z"
+   },
+   {
+    "duration": 2,
+    "start_time": "2022-05-18T10:34:03.313Z"
+   },
+   {
+    "duration": 3,
+    "start_time": "2022-05-18T10:34:04.147Z"
+   },
+   {
+    "duration": 11,
+    "start_time": "2022-05-18T10:34:04.434Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-18T10:34:14.109Z"
+   },
+   {
+    "duration": 7,
+    "start_time": "2022-05-18T10:34:15.705Z"
+   },
+   {
+    "duration": 8,
+    "start_time": "2022-05-18T10:34:18.826Z"
+   },
+   {
+    "duration": 5,
+    "start_time": "2022-05-18T10:34:20.093Z"
+   },
+   {
+    "duration": 15,
+    "start_time": "2022-05-18T10:34:21.694Z"
+   },
+   {
+    "duration": 12,
+    "start_time": "2022-05-18T10:34:22.209Z"
+   },
+   {
+    "duration": 16,
+    "start_time": "2022-05-18T10:34:25.530Z"
+   },
+   {
+    "duration": 12,
+    "start_time": "2022-05-18T10:34:26.622Z"
+   }
+  ],
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.12"
+  },
+  "toc": {
+   "base_numbering": 1,
+   "nav_menu": {},
+   "number_sections": true,
+   "sideBar": true,
+   "skip_h1_title": true,
+   "title_cell": "Содержание",
+   "title_sidebar": "Contents",
+   "toc_cell": true,
+   "toc_position": {},
+   "toc_section_display": true,
+   "toc_window_display": true
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
